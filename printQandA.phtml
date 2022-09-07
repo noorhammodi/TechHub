@@ -1,0 +1,144 @@
+<?php
+include_once 'server.php';
+$currentQ = $_SESSION["currentQuestion"];
+$row_answers=0;
+$numAnswersQuery = "SELECT * FROM answers where refQuestion = '$currentQ[questionID]'";
+$result_numAnswers = mysqli_query($db, $numAnswersQuery);
+$ans = mysqli_fetch_assoc($result_numAnswers);
+$row_answers = mysqli_num_rows($result_numAnswers);
+
+$asker_query = "SELECT username, userID FROM users where userID = '$currentQ[asker]'";
+$asker_result = mysqli_query($db, $asker_query);
+$askerName=mysqli_fetch_assoc($asker_result);
+
+?>
+
+
+
+
+<div class="row">
+<!--    <div class="col-sm-1">-->
+<!--    </div>-->
+    <div class="col-sm-2" style="margin-left: 30px">
+        <div class="well">
+            <p><?php echo("<a href=\"profile.php?userID=". $askerName["userID"] ."\">". $askerName["username"] ."</a>"); ?></p>
+            <a href="profile.php?userID=<?php echo $askerName["userID"]?>"><img class="img-circle" src="data:image/jpeg;base64, <?php echo fetchProfilePic($askerName['username']) ?>" alt="Profile Picture" height="55" width="55"></a>
+            <p style="margin-top: 10px;">Asked:</p>
+        </div>
+    </div>
+    <div class="col-sm-9">
+        <div class="well">
+            <div class="panel panel-default">
+
+                <div class="panel-heading" data-questionID="<?php echo($currentQ['questionID']); ?>" >
+
+                    <h4 align="left"> <?php echo($currentQ['title']); ?></h4>
+                    <p align="left"><?php echo($currentQ['questionText']); ?></p>
+					<div class="vote roundrect">
+					  <div class="increment up"></div>
+            <div class="increment down"></div>
+            <div class="count" id= "<?php echo($currentQ['questionID']);?>"> <?php echo($currentQ['voteCount']); ?> </div>
+					</div>
+                </div>
+
+
+                <?php
+
+                //getting user name of
+
+
+
+                if($row_answers != 0) {
+                    // print answers
+                    echo("<div class = \"panel-body\">");
+                    //echo($row_answers);
+                    if (isset($_SESSION["userID"])){
+                      if ($_SESSION["userID"]==$currentQ["asker"]){
+                        $showStars=1;
+                      }
+                      else{
+                        $showStars=0;
+                      }
+                    }
+                    else{
+                      $showStars=0;
+                    }
+
+                    for($n = 0; $n < $row_answers; $n++){
+                        if ($n>0){
+                            echo("<div class=\"modal-footer\"></div>");
+                        }
+                        $answer_n_Query= "SELECT * FROM answers where refQuestion = '$currentQ[questionID]' ORDER BY answerID ASC LIMIT 1 OFFSET $n";
+                        $answerResult = mysqli_query($db, $answer_n_Query);
+
+                        $currentAnswer = mysqli_fetch_assoc($answerResult);
+                        mysqli_free_result($answerResult);
+
+                        $userNameQuery = "SELECT * FROM users where userID = '$currentAnswer[answerer]'";
+                        $userPoster = mysqli_query($db, $userNameQuery);
+                        $UN = mysqli_fetch_assoc($userPoster);
+
+
+
+                        echo("<p style=\"text-align: center\"><a href=\"profile.php?userID=". $UN['userID'] ."\"> <strong>". $UN['username'] . "</strong></a> answered:<br></p>");
+                        $answerText = $currentAnswer['answerText'];
+                        echo("<p id=\"center\">". $answerText . "</p>");
+
+
+                      //  // print_r($currentAnswer);
+                      //  $questionID = $currentQ['questionID'];
+                      //   $answerID = $currentAnswer['answerID'];
+                      // $voter = $_SESSION['userID'];
+                      //
+                      //   $voteQuery = "SELECT * FROM votes where voterID = $voter and questionID = $questionID and answerID = $answerID ";
+                      //   $answerResult2 = mysqli_query($db, $voteQuery);
+                      //   $votes = mysqli_fetch_assoc($answerResult2);
+                      //
+                      //   //upvote and down vote for answer
+                      //   $OP = $currentQ['asker'];
+                      //
+                      //   $hasVoted = $votes['hasVoted'];
+                      //   $upvote1 = $votes['upVote'];
+                        echo("<div class=\"vote roundrect\">
+              					  <div class=\"increment up\"></div>
+                          <div class=\"increment down\"></div>
+                          <div class=\"count\" id= \"answer" . $currentAnswer['answerID'] . "\">" . $currentAnswer['voteCount'] . "</div>
+              					");
+
+
+
+                        echo '</div>';
+
+                        //Best answer button goes here
+                        $isBest = 0;
+                        if ($currentAnswer['isBest']){
+                          $isBest = 1;
+                          include 'star.phtml';
+                        }
+                        elseif ($showStars){
+                          include 'star.phtml';
+                        }
+
+
+                    }
+                    echo("</div>");
+                    // close the result.
+                    mysqli_free_result($result_numAnswers);
+                }
+                ?>
+
+
+                </div>
+                <div class="panel-footer">
+                    <div class="form-floating">
+                        <form id="form" method="post">
+                            <input type="hidden" name="submitAnswer" value="1" />
+                            <input type="hidden" name="refQuestion" value="<?php echo($currentQ['questionID']); ?>" />
+                            <textarea class="form-control" id="userAnswer" name="userAnswer" rows=2 cols="50" required placeholder="Answer question here"></textarea>
+                            <input type="submit" class="btn btn-default" value="Submit Answer">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
